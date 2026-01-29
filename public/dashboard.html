@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dashboard - Aplikasi Kriptografi</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css"
+    />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body class="bg-light">
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm">
+      <div class="container">
+        <a class="navbar-brand" href="#">
+          <i class="bi bi-shield-lock-fill"></i> Kriptografi App
+        </a>
+        <button
+          class="navbar-toggler"
+          type="button"
+          data-bs-toggle="collapse"
+          data-bs-target="#navbarNav"
+        >
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+          <ul class="navbar-nav ms-auto">
+            <li class="nav-item">
+              <span class="nav-link">
+                <i class="bi bi-person-circle"></i>
+                <span id="usernameDisplay"></span>
+              </span>
+            </li>
+            <li class="nav-item">
+              <button class="btn btn-outline-light btn-sm" id="logoutBtn">
+                <i class="bi bi-box-arrow-right"></i> Logout
+              </button>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+
+    <div class="container my-5">
+      <!-- Encryption/Decryption Card -->
+      <div class="row mb-4">
+        <div class="col-lg-8 mx-auto">
+          <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+              <h4 class="mb-0">
+                <i class="bi bi-key-fill"></i> Enkripsi & Dekripsi
+              </h4>
+            </div>
+            <div class="card-body">
+              <form id="cryptoForm">
+                <div class="row mb-3">
+                  <div class="col-md-6">
+                    <label class="form-label fw-bold">Pilih Algoritma</label>
+                    <div class="btn-group w-100" role="group">
+                      <input
+                        type="radio"
+                        class="btn-check"
+                        name="algorithm"
+                        id="aesRadio"
+                        value="aes"
+                        checked
+                      />
+                      <label class="btn btn-outline-primary" for="aesRadio">
+                        <i class="bi bi-lock"></i> AES-256
+                      </label>
+
+                      <input
+                        type="radio"
+                        class="btn-check"
+                        name="algorithm"
+                        id="vigenereRadio"
+                        value="vigenere"
+                      />
+                      <label
+                        class="btn btn-outline-primary"
+                        for="vigenereRadio"
+                      >
+                        <i class="bi bi-alphabet"></i> Vigenere
+                      </label>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label fw-bold">Pilih Operasi</label>
+                    <div class="btn-group w-100" role="group">
+                      <input
+                        type="radio"
+                        class="btn-check"
+                        name="operation"
+                        id="encryptRadio"
+                        value="encrypt"
+                        checked
+                      />
+                      <label class="btn btn-outline-success" for="encryptRadio">
+                        <i class="bi bi-shield-lock"></i> Enkripsi
+                      </label>
+
+                      <input
+                        type="radio"
+                        class="btn-check"
+                        name="operation"
+                        id="decryptRadio"
+                        value="decrypt"
+                      />
+                      <label class="btn btn-outline-danger" for="decryptRadio">
+                        <i class="bi bi-unlock"></i> Dekripsi
+                      </label>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="mb-3">
+                  <label for="inputText" class="form-label fw-bold"
+                    >Teks Input</label
+                  >
+                  <textarea
+                    class="form-control"
+                    id="inputText"
+                    rows="4"
+                    placeholder="Masukkan teks yang akan dienkripsi/dekripsi..."
+                    required
+                  ></textarea>
+                </div>
+
+                <div class="mb-3">
+                  <label for="cryptoKey" class="form-label fw-bold"
+                    >Kunci (Key)</label
+                  >
+                  <div class="input-group">
+                    <input
+                      type="password"
+                      class="form-control"
+                      id="cryptoKey"
+                      placeholder="Masukkan kunci enkripsi/dekripsi"
+                      required
+                    />
+                    <button
+                      class="btn btn-outline-secondary"
+                      type="button"
+                      id="toggleKey"
+                    >
+                      <i class="bi bi-eye"></i>
+                    </button>
+                  </div>
+                  <small class="text-muted" id="keyHelp">
+                    AES: Gunakan kunci yang kuat (min. 8 karakter)
+                  </small>
+                </div>
+
+                <div class="d-grid gap-2">
+                  <button type="submit" class="btn btn-primary btn-lg">
+                    <i class="bi bi-gear-fill"></i> Proses
+                  </button>
+                </div>
+              </form>
+
+              <div id="resultSection" class="mt-4" style="display: none">
+                <hr />
+                <h5 class="mb-3">
+                  <i class="bi bi-check-circle-fill text-success"></i> Hasil
+                </h5>
+                <div class="alert alert-success">
+                  <div
+                    class="d-flex justify-content-between align-items-center mb-2"
+                  >
+                    <strong>Output:</strong>
+                    <button class="btn btn-sm btn-outline-success" id="copyBtn">
+                      <i class="bi bi-clipboard"></i> Copy
+                    </button>
+                  </div>
+                  <textarea
+                    class="form-control"
+                    id="resultText"
+                    rows="4"
+                    readonly
+                  ></textarea>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- History Section -->
+      <div class="row">
+        <div class="col-lg-10 mx-auto">
+          <div class="card shadow">
+            <div
+              class="card-header bg-dark text-white d-flex justify-content-between align-items-center"
+            >
+              <h4 class="mb-0">
+                <i class="bi bi-clock-history"></i> Riwayat Enkripsi/Dekripsi
+              </h4>
+              <button class="btn btn-sm btn-outline-light" id="clearHistoryBtn">
+                <i class="bi bi-trash"></i> Hapus Semua
+              </button>
+            </div>
+            <div class="card-body">
+              <div id="historyContainer">
+                <div class="text-center text-muted py-5">
+                  <i class="bi bi-inbox" style="font-size: 3rem"></i>
+                  <p class="mt-2">Belum ada riwayat</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <footer class="bg-dark text-white text-center py-3 mt-5">
+      <div class="container">
+        <small>&copy; 2024 Aplikasi Kriptografi - AES & Vigenere Cipher</small>
+      </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="dashboard.js"></script>
+  </body>
+</html>

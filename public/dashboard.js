@@ -1,0 +1,320 @@
+// Check authentication
+async function checkAuth() {
+  try {
+    const response = await fetch("/api/check-session");
+    const data = await response.json();
+
+    if (!data.authenticated) {
+      window.location.href = "/login.html";
+    } else {
+      document.getElementById("usernameDisplay").textContent = data.username;
+      loadHistory();
+    }
+  } catch (error) {
+    window.location.href = "/login.html";
+  }
+}
+
+// Run on page load
+checkAuth();
+
+// Logout handler
+document.getElementById("logoutBtn").addEventListener("click", async () => {
+  const result = await Swal.fire({
+    title: "Konfirmasi Logout",
+    text: "Apakah Anda yakin ingin keluar?",
+    icon: "question",
+    showCancelButton: true,
+    confirmButtonText: "Ya, Logout",
+    cancelButtonText: "Batal",
+  });
+
+  if (result.isConfirmed) {
+    try {
+      await fetch("/api/logout", { method: "POST" });
+      window.location.href = "/login.html";
+    } catch (error) {
+      console.error("Error during logout:", error);
+    }
+  }
+});
+
+// Toggle key visibility
+document.getElementById("toggleKey").addEventListener("click", function () {
+  const keyInput = document.getElementById("cryptoKey");
+  const icon = this.querySelector("i");
+
+  if (keyInput.type === "password") {
+    keyInput.type = "text";
+    icon.className = "bi bi-eye-slash";
+  } else {
+    keyInput.type = "password";
+    icon.className = "bi bi-eye";
+  }
+});
+
+// Update key help text based on algorithm
+document.querySelectorAll('input[name="algorithm"]').forEach((radio) => {
+  radio.addEventListener("change", function () {
+    const keyHelp = document.getElementById("keyHelp");
+    if (this.value === "aes") {
+      keyHelp.textContent = "AES: Gunakan kunci yang kuat (min. 8 karakter)";
+    } else {
+      keyHelp.textContent =
+        "Vigenere: Gunakan kata/frasa sebagai kunci (hanya huruf)";
+    }
+  });
+});
+
+// Crypto form handler
+document.getElementById("cryptoForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+
+  const algorithm = document.querySelector(
+    'input[name="algorithm"]:checked',
+  ).value;
+  const operation = document.querySelector(
+    'input[name="operation"]:checked',
+  ).value;
+  const text = document.getElementById("inputText").value;
+  const key = document.getElementById("cryptoKey").value;
+
+  // Validation for Vigenere
+  if (algorithm === "vigenere" && !/^[a-zA-Z]+$/.test(key)) {
+    Swal.fire({
+      icon: "error",
+      title: "Key Tidak Valid",
+      text: "Untuk Vigenere, kunci hanya boleh berisi huruf (A-Z)",
+    });
+    return;
+  }
+
+  // Show loading
+  Swal.fire({
+    title: "Memproses...",
+    text: "Mohon tunggu",
+    allowOutsideClick: false,
+    didOpen: () => {
+      Swal.showLoading();
+    },
+  });
+
+  try {
+    const response = await fetch("/api/crypto", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ algorithm, operation, text, key }),
+    });
+
+    const data = await response.json();
+
+    if (data.success) {
+      // Show result
+      document.getElementById("resultText").value = data.result;
+      document.getElementById("resultSection").style.display = "block";
+
+      Swal.fire({
+        icon: "success",
+        title: "Berhasil!",
+        text: `${operation === "encrypt" ? "Enkripsi" : "Dekripsi"} berhasil dilakukan`,
+        timer: 1500,
+        showConfirmButton: false,
+      });
+
+      // Reload history
+      loadHistory();
+    } else {
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: data.message,
+      });
+    }
+  } catch (error) {
+    Swal.fire({
+      icon: "error",
+      title: "Error",
+      text: "Terjadi kesalahan saat memproses",
+    });
+  }
+});
+
+// Copy result to clipboard
+document.getElementById("copyBtn").addEventListener("click", () => {
+  const resultText = document.getElementById("resultText");
+  resultText.select();
+  document.execCommand("copy");
+
+  const btn = document.getElementById("copyBtn");
+  const originalHTML = btn.innerHTML;
+  btn.innerHTML = '<i class="bi bi-check"></i> Tersalin!';
+
+  setTimeout(() => {
+    btn.innerHTML = originalHTML;
+  }, 2000);
+});
+
+// Load history
+async function loadHistory() {
+  try {
+    const response = await fetch("/api/history");
+    const data = await response.json();
+
+    const container = document.getElementById("historyContainer");
+
+    if (data.success && data.data.length > 0) {
+      let html =
+        '<div class="table-responsive"><table class="table table-hover">';
+      html += '<thead class="table-dark"><tr>';
+      html += "<th>Waktu</th>";
+      html += "<th>Algoritma</th>";
+      html += "<th>Operasi</th>";
+      html += "<th>Teks Asli</th>";
+      html += "<th>Hasil</th>";
+      html += "<th>Kunci</th>";
+      html += "<th>Aksi</th>";
+      html += "</tr></thead><tbody>";
+
+      data.data.forEach((item) => {
+        const date = new Date(item.created_at);
+        const formattedDate = date.toLocaleString("id-ID", {
+          day: "2-digit",
+          month: "short",
+          year: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+        });
+
+        const operationBadge =
+          item.operation === "encrypt"
+            ? '<span class="badge bg-success">Enkripsi</span>'
+            : '<span class="badge bg-danger">Dekripsi</span>';
+
+        const algorithmBadge =
+          item.algorithm === "AES"
+            ? '<span class="badge bg-primary">AES-256</span>'
+            : '<span class="badge bg-info">Vigenere</span>';
+
+        html += `<tr>
+                    <td><small>${formattedDate}</small></td>
+                    <td>${algorithmBadge}</td>
+                    <td>${operationBadge}</td>
+                    <td><small class="text-truncate d-inline-block" style="max-width: 150px;" title="${item.original_text}">${item.original_text}</small></td>
+                    <td><small class="text-truncate d-inline-block" style="max-width: 150px;" title="${item.result_text}">${item.result_text}</small></td>
+                    <td><small>****</small></td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-danger delete-history" data-id="${item.id}">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </td>
+                </tr>`;
+      });
+
+      html += "</tbody></table></div>";
+      container.innerHTML = html;
+
+      // Add delete handlers
+      document.querySelectorAll(".delete-history").forEach((btn) => {
+        btn.addEventListener("click", async function () {
+          const id = this.getAttribute("data-id");
+          await deleteHistory(id);
+        });
+      });
+    } else {
+      container.innerHTML = `
+                <div class="text-center text-muted py-5">
+                    <i class="bi bi-inbox" style="font-size: 3rem;"></i>
+                    <p class="mt-2">Belum ada riwayat</p>
+                </div>
+            `;
+    }
+  } catch (error) {
+    console.error("Error loading history:", error);
+  }
+}
+
+// Delete single history
+async function deleteHistory(id) {
+  const result = await Swal.fire({
+    title: "Hapus Riwayat?",
+    text: "Anda yakin ingin menghapus riwayat ini?",
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonColor: "#d33",
+    cancelButtonColor: "#3085d6",
+    confirmButtonText: "Ya, Hapus",
+    cancelButtonText: "Batal",
+  });
+
+  if (result.isConfirmed) {
+    try {
+      const response = await fetch(`/api/history/${id}`, {
+        method: "DELETE",
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        Swal.fire({
+          icon: "success",
+          title: "Terhapus!",
+          text: "Riwayat berhasil dihapus",
+          timer: 1500,
+          showConfirmButton: false,
+        });
+        loadHistory();
+      }
+    } catch (error) {
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "Gagal menghapus riwayat",
+      });
+    }
+  }
+}
+
+// Clear all history
+document
+  .getElementById("clearHistoryBtn")
+  .addEventListener("click", async () => {
+    const result = await Swal.fire({
+      title: "Hapus Semua Riwayat?",
+      text: "Semua riwayat akan dihapus permanen!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "Ya, Hapus Semua",
+      cancelButtonText: "Batal",
+    });
+
+    if (result.isConfirmed) {
+      try {
+        const response = await fetch("/api/history", {
+          method: "DELETE",
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          Swal.fire({
+            icon: "success",
+            title: "Terhapus!",
+            text: "Semua riwayat berhasil dihapus",
+            timer: 1500,
+            showConfirmButton: false,
+          });
+          loadHistory();
+        }
+      } catch (error) {
+        Swal.fire({
+          icon: "error",
+          title: "Error",
+          text: "Gagal menghapus riwayat",
+        });
+      }
+    }
+  });
